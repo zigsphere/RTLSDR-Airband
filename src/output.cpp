@@ -28,6 +28,12 @@
 #include <ogg/ogg.h>
 #include <vorbis/vorbisenc.h>
 #include <shout/shout.h>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
+#include <queue>
+#include <functional>
+#include <chrono>
 // SHOUTERR_RETRY is available since libshout 2.4.0.
 // Set it to an impossible value if it's not there.
 #ifndef SHOUTERR_RETRY
@@ -43,9 +49,71 @@
 #include <ctime>
 #include <cerrno>
 #include <cassert>
+#include <sys/wait.h>
 #include "rtl_airband.h"
 #include "input-common.h"
 #include "config.h"
+
+class ThreadPool {
+public:
+    ThreadPool(size_t num_threads);
+    ~ThreadPool();
+
+    void enqueue(std::function<void()> task);
+
+private:
+    std::vector<std::thread> workers;
+    std::queue<std::function<void()>> tasks;
+
+    std::mutex queue_mutex;
+    std::condition_variable condition;
+    bool stop;
+};
+
+ThreadPool::ThreadPool(size_t num_threads) : stop(false) {
+    for(size_t i = 0; i < num_threads; ++i) {
+        workers.emplace_back([this] {
+            for(;;) {
+                std::function<void()> task;
+
+                {
+                    std::unique_lock<std::mutex> lock(this->queue_mutex);
+                    this->condition.wait(lock, [this] {
+                        return this->stop || !this->tasks.empty();
+                    });
+                    if(this->stop && this->tasks.empty())
+                        return;
+                    task = std::move(this->tasks.front());
+                    this->tasks.pop();
+                }
+
+                task();
+            }
+        });
+    }
+}
+
+ThreadPool::~ThreadPool() {
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        stop = true;
+    }
+    condition.notify_all();
+    for(std::thread &worker: workers)
+        worker.join();
+}
+
+void ThreadPool::enqueue(std::function<void()> task) {
+    {
+        std::unique_lock<std::mutex> lock(queue_mutex);
+        if(stop)
+            throw std::runtime_error("enqueue on stopped ThreadPool");
+        tasks.emplace(task);
+    }
+    condition.notify_one();
+}
+
+ThreadPool pool(4);
 
 void shout_setup(icecast_data *icecast, mix_modes mixmode) {
 	int ret;
@@ -229,6 +297,64 @@ int rename_if_exists(char const *oldpath, char const *newpath) {
 	return ret;
 }
 
+void run_script_with_timeout(const std::string& command, const std::string& file_path) {
+    std::mutex mtx;
+    std::condition_variable cv;
+    bool finished = false;
+    pid_t script_pid;
+
+    std::thread script_thread([&]() {
+        script_pid = fork();
+        if (script_pid == -1) {
+            // Fork failed
+            log(LOG_WARNING, "Fork failed: %s\n", std::strerror(errno));
+            return;
+        }
+
+        if (script_pid == 0) {
+            // Child process
+            std::string full_command = command + " " + file_path + " > /dev/null 2>&1";
+            execl("/bin/sh", "sh", "-c", full_command.c_str(), (char*) nullptr);
+            // If execl returns, it means it failed
+            log(LOG_WARNING, "execl failed: %s\n", std::strerror(errno));
+            exit(EXIT_FAILURE);
+        } else {
+            // Parent process
+            int status;
+            if (waitpid(script_pid, &status, 0) == -1) {
+                // waitpid failed
+                log(LOG_WARNING, "waitpid failed: %s\n", std::strerror(errno));
+            } else {
+                if (WIFEXITED(status)) {
+                    int exit_code = WEXITSTATUS(status);
+                    if (exit_code != 0) {
+                        log(LOG_WARNING, "Script exited with non-zero exit code: %d\n", exit_code);
+                    }
+                } else if (WIFSIGNALED(status)) {
+                    log(LOG_WARNING, "Script was terminated by signal: %d\n", WTERMSIG(status));
+                }
+            }
+
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                finished = true;
+            }
+            cv.notify_one();
+        }
+    });
+
+    script_thread.detach();
+
+    {
+        std::unique_lock<std::mutex> lock(mtx);
+        if(!cv.wait_for(lock, std::chrono::seconds(32), [&] { return finished; })) {
+            // The script did not finish in 32 seconds, log the timeout and kill the script process
+            log(LOG_WARNING, "External script timed out");
+            kill(script_pid, SIGKILL);
+        }
+    }
+}
+
 /*
  * Open output file (mp3 or raw IQ) for append or initial write.
  * If appending to an audio file, insert discontinuity indictor tones
@@ -317,6 +443,14 @@ static void close_file(channel_t *channel, file_data *fdata) {
 		fdata->f = NULL;
 		rename_if_exists(fdata->file_path_tmp, fdata->file_path);
 	}
+
+    std::string command = fdata->external_script;
+    if (!command.empty() && fdata->file_path != NULL) {
+        std::string file_path(fdata->file_path);
+        pool.enqueue(std::bind(run_script_with_timeout, command, file_path));
+
+    }
+
 	free(fdata->file_path);
 	fdata->file_path = NULL;
 	free(fdata->file_path_tmp);

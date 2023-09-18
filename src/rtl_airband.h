@@ -143,6 +143,7 @@ struct file_data {
     float min_transmission_time_sec;
     float max_transmission_time_sec;
     float max_transmission_idle_sec;
+    char *external_script;
 };
 
 struct udp_stream_data {
