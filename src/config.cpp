@@ -121,40 +121,40 @@ static int parse_outputs(libconfig::Setting &outs, channel_t *channel, int i, in
             channel->need_mp3 = 1;
 
             if(outs[o].exists("external_script"))
-			{
-				fdata->external_script = strdup(outs[o]["external_script"].c_str());
-			}
-			else
-			{
-				fdata->external_script = strdup("");
-			}
+            {
+                fdata->external_script = strdup(outs[o]["external_script"].c_str());
+            }
+            else
+            {
+                fdata->external_script = strdup("");
+            }
 
-			if(outs[o].exists("transmission_delay"))
-			{
-				fdata->max_transmission_idle_sec = outs[o]["transmission_delay"];
-			}
-			else
-			{
-				fdata->max_transmission_idle_sec = 0.5;
-			}
+            if(outs[o].exists("transmission_delay"))
+            {
+                fdata->max_transmission_idle_sec = outs[o]["transmission_delay"];
+            }
+            else
+            {
+                fdata->max_transmission_idle_sec = 0.5;
+            }
 
-			if(outs[o].exists("minimum_transmission"))
-			{
-				fdata->min_transmission_time_sec = outs[o]["minimum_transmission"];
-			}
-			else
-			{
-				fdata->min_transmission_time_sec = 1.0;
-			}
+            if(outs[o].exists("minimum_transmission"))
+            {
+                fdata->min_transmission_time_sec = outs[o]["minimum_transmission"];
+            }
+            else
+            {
+                fdata->min_transmission_time_sec = 1.0;
+            }
 
-			if(outs[o].exists("max_transmission") && fdata->split_on_transmission)
-			{
-				fdata->max_transmission_time_sec = outs[o]["max_transmission"];
-			}
-			else
-			{
-				fdata->max_transmission_time_sec = 3600;
-			}
+            if(outs[o].exists("max_transmission") && fdata->split_on_transmission)
+            {
+                fdata->max_transmission_time_sec = outs[o]["max_transmission"];
+            }
+            else
+            {
+                fdata->max_transmission_time_sec = 3600;
+            }
 
             if(fdata->split_on_transmission) {
                 if (parsing_mixers) {

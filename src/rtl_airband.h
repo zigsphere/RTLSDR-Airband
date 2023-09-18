@@ -85,8 +85,8 @@
 #if defined WITH_BCM_VC
 struct sample_fft_arg
 {
-	size_t fft_size_by4;
-	GPU_FFT_COMPLEX* dest;
+    size_t fft_size_by4;
+    GPU_FFT_COMPLEX* dest;
 };
 extern "C" void samplefft(sample_fft_arg *a, unsigned char* buffer, float* window, float* levels);
 
@@ -101,45 +101,45 @@ enum status {NO_SIGNAL = ' ', SIGNAL = '*', AFC_UP = '<', AFC_DOWN = '>' };
 enum ch_states { CH_DIRTY, CH_WORKING, CH_READY };
 enum mix_modes { MM_MONO, MM_STEREO };
 enum output_type {
-	O_ICECAST,
-	O_FILE,
-	O_RAWFILE,
-	O_MIXER,
-	O_UDP_STREAM
+    O_ICECAST,
+    O_FILE,
+    O_RAWFILE,
+    O_MIXER,
+    O_UDP_STREAM
 #ifdef WITH_PULSEAUDIO
-	, O_PULSE
+    , O_PULSE
 #endif
 };
 
 struct icecast_data {
-	const char *hostname;
-	int port;
+    const char *hostname;
+    int port;
 #ifdef LIBSHOUT_HAS_TLS
-	int tls_mode;
+    int tls_mode;
 #endif
-	const char *username;
-	const char *password;
-	const char *mountpoint;
-	const char *name;
-	const char *genre;
-	const char *description;
-	bool send_scan_freq_tags;
-	shout_t *shout;
+    const char *username;
+    const char *password;
+    const char *mountpoint;
+    const char *name;
+    const char *genre;
+    const char *description;
+    bool send_scan_freq_tags;
+    shout_t *shout;
 };
 
 struct file_data {
-	char *basename;
-	char *suffix;
-	char *file_path;
-	char *file_path_tmp;
-	bool continuous;
-	bool append;
-	bool split_on_transmission;
-	bool include_freq;
-	timeval open_time;
-	timeval last_write_time;
-	FILE *f;
-	enum output_type type;
+    char *basename;
+    char *suffix;
+    char *file_path;
+    char *file_path_tmp;
+    bool continuous;
+    bool append;
+    bool split_on_transmission;
+    bool include_freq;
+    timeval open_time;
+    timeval last_write_time;
+    FILE *f;
+    enum output_type type;
     float min_transmission_time_sec;
     float max_transmission_time_sec;
     float max_transmission_idle_sec;
@@ -147,182 +147,182 @@ struct file_data {
 };
 
 struct udp_stream_data {
-	float *stereo_buffer;
-	size_t stereo_buffer_len;
+    float *stereo_buffer;
+    size_t stereo_buffer_len;
 
-	bool continuous;
-	const char *dest_address;
-	const char *dest_port;
+    bool continuous;
+    const char *dest_address;
+    const char *dest_port;
 
-	int send_socket;
-	struct sockaddr dest_sockaddr;
-	socklen_t dest_sockaddr_len;
+    int send_socket;
+    struct sockaddr dest_sockaddr;
+    socklen_t dest_sockaddr_len;
 };
 
 #ifdef WITH_PULSEAUDIO
 struct pulse_data {
-	const char *server;
-	const char *name;
-	const char *sink;
-	const char *stream_name;
-	pa_context *context;
-	pa_stream *left, *right;
-	pa_channel_map lmap, rmap;
-	mix_modes mode;
-	bool continuous;
+    const char *server;
+    const char *name;
+    const char *sink;
+    const char *stream_name;
+    pa_context *context;
+    pa_stream *left, *right;
+    pa_channel_map lmap, rmap;
+    mix_modes mode;
+    bool continuous;
 };
 #endif
 
 struct mixer_data {
-	struct mixer_t *mixer;
-	int input;
+    struct mixer_t *mixer;
+    int input;
 };
 
 struct output_t {
-	enum output_type type;
-	bool enabled;
-	bool active;
-	void *data;
+    enum output_type type;
+    bool enabled;
+    bool active;
+    void *data;
 };
 
 struct freq_tag {
-	int freq;
-	struct timeval tv;
+    int freq;
+    struct timeval tv;
 };
 
 enum modulations {
-	MOD_AM
+    MOD_AM
 #ifdef NFM
-	, MOD_NFM
+    , MOD_NFM
 #endif
 };
 
 class Signal {
 public:
-	Signal(void) {
-		pthread_cond_init(&cond_, NULL);
-		pthread_mutex_init(&mutex_, NULL);
-	}
-	void send(void) {
-		pthread_mutex_lock(&mutex_);
-		pthread_cond_signal(&cond_);
-		pthread_mutex_unlock(&mutex_);
-	}
-	void wait(void) {
-		pthread_mutex_lock(&mutex_);
-		pthread_cond_wait(&cond_, &mutex_);
-		pthread_mutex_unlock(&mutex_);
-	}
+    Signal(void) {
+        pthread_cond_init(&cond_, NULL);
+        pthread_mutex_init(&mutex_, NULL);
+    }
+    void send(void) {
+        pthread_mutex_lock(&mutex_);
+        pthread_cond_signal(&cond_);
+        pthread_mutex_unlock(&mutex_);
+    }
+    void wait(void) {
+        pthread_mutex_lock(&mutex_);
+        pthread_cond_wait(&cond_, &mutex_);
+        pthread_mutex_unlock(&mutex_);
+    }
 private:
-	pthread_cond_t cond_;
-	pthread_mutex_t	mutex_;
+    pthread_cond_t cond_;
+    pthread_mutex_t	mutex_;
 };
 
 struct freq_t {
-	int frequency;				// scan frequency
-	char *label;				// frequency label
-	float agcavgfast;			// average power, for AGC
-	float ampfactor;			// multiplier to increase / decrease volume
-	Squelch squelch;
-	size_t active_counter;		// count of loops where channel has signal
-	NotchFilter notch_filter;	// notch filter - good to remove CTCSS tones
-	LowpassFilter lowpass_filter;	// lowpass filter, applied to I/Q after derotation, set at bandwidth/2 to remove out of band noise
-	enum modulations modulation;
+    int frequency;				// scan frequency
+    char *label;				// frequency label
+    float agcavgfast;			// average power, for AGC
+    float ampfactor;			// multiplier to increase / decrease volume
+    Squelch squelch;
+    size_t active_counter;		// count of loops where channel has signal
+    NotchFilter notch_filter;	// notch filter - good to remove CTCSS tones
+    LowpassFilter lowpass_filter;	// lowpass filter, applied to I/Q after derotation, set at bandwidth/2 to remove out of band noise
+    enum modulations modulation;
 };
 struct channel_t {
-	float wavein[WAVE_LEN];		// FFT output waveform
-	float waveout[WAVE_LEN];	// waveform after squelch + AGC (left/center channel mixer output)
-	float waveout_r[WAVE_LEN];	// right channel mixer output
-	float iq_in[2*WAVE_LEN];	// raw input samples for I/Q outputs and NFM demod
-	float iq_out[2*WAVE_LEN];	// raw output samples for I/Q outputs (FIXME: allocate only if required)
+    float wavein[WAVE_LEN];		// FFT output waveform
+    float waveout[WAVE_LEN];	// waveform after squelch + AGC (left/center channel mixer output)
+    float waveout_r[WAVE_LEN];	// right channel mixer output
+    float iq_in[2*WAVE_LEN];	// raw input samples for I/Q outputs and NFM demod
+    float iq_out[2*WAVE_LEN];	// raw output samples for I/Q outputs (FIXME: allocate only if required)
 #ifdef NFM
-	float pr;					// previous sample - real part
-	float pj;					// previous sample - imaginary part
-	float prev_waveout;         // previous sample - waveout before notch / ampfactor
-	float alpha;
+    float pr;					// previous sample - real part
+    float pj;					// previous sample - imaginary part
+    float prev_waveout;         // previous sample - waveout before notch / ampfactor
+    float alpha;
 #endif
-	uint32_t dm_dphi, dm_phi;	// derotation frequency and current phase value
-	enum mix_modes mode;		// mono or stereo
-	status axcindicate;
-	unsigned char afc;			//0 - AFC disabled; 1 - minimal AFC; 2 - more aggressive AFC and so on to 255
-	struct freq_t *freqlist;
-	int freq_count;
-	int freq_idx;
-	int output_count;
-	int need_mp3;
-	int needs_raw_iq;
-	int has_iq_outputs;
-	enum ch_states state;		// mixer channel state flag
-	output_t *outputs;
-	int highpass;               // highpass filter cutoff
-	int lowpass;                // lowpass filter cutoff
-	lame_t lame;                // Context for LAME MP3 encoding if needed
-	unsigned char *lamebuf;		// Buffer used by each lame encode
+    uint32_t dm_dphi, dm_phi;	// derotation frequency and current phase value
+    enum mix_modes mode;		// mono or stereo
+    status axcindicate;
+    unsigned char afc;			//0 - AFC disabled; 1 - minimal AFC; 2 - more aggressive AFC and so on to 255
+    struct freq_t *freqlist;
+    int freq_count;
+    int freq_idx;
+    int output_count;
+    int need_mp3;
+    int needs_raw_iq;
+    int has_iq_outputs;
+    enum ch_states state;		// mixer channel state flag
+    output_t *outputs;
+    int highpass;               // highpass filter cutoff
+    int lowpass;                // lowpass filter cutoff
+    lame_t lame;                // Context for LAME MP3 encoding if needed
+    unsigned char *lamebuf;		// Buffer used by each lame encode
 };
 
 enum rec_modes { R_MULTICHANNEL, R_SCAN };
 struct device_t {
-	input_t *input;
+    input_t *input;
 #ifdef NFM
-	float alpha;
+    float alpha;
 #endif
-	int channel_count;
-	size_t *base_bins, *bins;
-	channel_t *channels;
+    int channel_count;
+    size_t *base_bins, *bins;
+    channel_t *channels;
 // FIXME: size_t
-	int waveend;
-	int waveavail;
-	THREAD controller_thread;
-	struct freq_tag tag_queue[TAG_QUEUE_LEN];
-	int tq_head, tq_tail;
-	int last_frequency;
-	pthread_mutex_t tag_queue_lock;
-	int row;
-	int failed;
-	enum rec_modes mode;
-	size_t output_overrun_count;
+    int waveend;
+    int waveavail;
+    THREAD controller_thread;
+    struct freq_tag tag_queue[TAG_QUEUE_LEN];
+    int tq_head, tq_tail;
+    int last_frequency;
+    pthread_mutex_t tag_queue_lock;
+    int row;
+    int failed;
+    enum rec_modes mode;
+    size_t output_overrun_count;
 };
 
 struct mixinput_t {
-	float *wavein;
-	float ampfactor;
-	float ampl, ampr;
-	bool ready;
-	bool has_signal;
-	pthread_mutex_t mutex;
-	size_t input_overrun_count;
+    float *wavein;
+    float ampfactor;
+    float ampl, ampr;
+    bool ready;
+    bool has_signal;
+    pthread_mutex_t mutex;
+    size_t input_overrun_count;
 };
 
 struct mixer_t {
-	const char *name;
-	bool enabled;
-	int input_count;
-	int interval;
-	unsigned int inputs_todo;
-	unsigned int input_mask;
-	channel_t channel;
-	mixinput_t inputs[MAX_MIXINPUTS];
-	size_t output_overrun_count;
+    const char *name;
+    bool enabled;
+    int input_count;
+    int interval;
+    unsigned int inputs_todo;
+    unsigned int input_mask;
+    channel_t channel;
+    mixinput_t inputs[MAX_MIXINPUTS];
+    size_t output_overrun_count;
 };
 
 struct demod_params_t {
-	Signal *mp3_signal;
-	int device_start;
-	int device_end;
+    Signal *mp3_signal;
+    int device_start;
+    int device_end;
 
 #ifndef WITH_BCM_VC
-	fftwf_plan fft;
-	fftwf_complex* fftin;
-	fftwf_complex* fftout;
+    fftwf_plan fft;
+    fftwf_complex* fftin;
+    fftwf_complex* fftout;
 #endif
 };
 
 struct output_params_t {
-	Signal *mp3_signal;
-	int device_start;
-	int device_end;
-	int mixer_start;
-	int mixer_end;
+    Signal *mp3_signal;
+    int device_start;
+    int device_end;
+    int mixer_start;
+    int mixer_end;
 };
 
 // version.cpp
